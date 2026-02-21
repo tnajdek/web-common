@@ -152,14 +152,18 @@ test('Keyboard navigation with portal', async ({ mount }) => {
 
 	const component = await mount(
 		<div className="container">
-			<UncontrolledDropdown portal>
-				<DropdownToggle>Click</DropdownToggle>
-				<DropdownMenu>
-					<DropdownItem onClick={() => { itemClickCount++; }}>Item 1</DropdownItem>
-					<DropdownItem>Item 2</DropdownItem>
-					<DropdownItem>Item 3</DropdownItem>
-				</DropdownMenu>
-			</UncontrolledDropdown>
+			<button>Other Button</button>
+d			<div style={{ overflow: 'hidden', position: 'relative' }}>
+				<UncontrolledDropdown portal>
+					<DropdownToggle>Click</DropdownToggle>
+					<DropdownMenu>
+						<DropdownItem onClick={() => { itemClickCount++; }}>Item 1</DropdownItem>
+						<DropdownItem>Item 2</DropdownItem>
+						<DropdownItem>Item 3</DropdownItem>
+					</DropdownMenu>
+				</UncontrolledDropdown>
+			</div>
+			<button>Other Button</button>
 		</div>
 	);
 
@@ -170,6 +174,10 @@ test('Keyboard navigation with portal', async ({ mount }) => {
 	const item1 = page.getByRole('menuitem', { name: 'Item 1' });
 	const item2 = page.getByRole('menuitem', { name: 'Item 2' });
 	const item3 = page.getByRole('menuitem', { name: 'Item 3' });
+
+	// Verify the menu is portaled outside the component tree
+	await expect(component.locator('[role="menu"]')).toHaveCount(0);
+	await expect(menu).toHaveCount(1);
 
 	// Open the dropdown with Enter - focus auto-moves to the first item
 	await toggle.focus();
