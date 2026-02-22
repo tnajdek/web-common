@@ -107,7 +107,21 @@ export const Dropdown = memo(props => {
 		}
 		if (wasOpen && !isOpen && pendingReturnFocus.current) {
 			pendingReturnFocus.current = false;
-			ref.current?.querySelector('[aria-haspopup="true"]')?.focus();
+			const toggle = ref.current?.querySelector('[aria-haspopup="true"]');
+			if (toggle) {
+				// Only return focus to the toggle if the focus is still within the dropdown
+				// (either in the container or the floating portal). If focus has moved
+				// elsewhere (e.g. a modal opened by a menu action), don't steal it.
+				const active = document.activeElement;
+				if (!active || active === document.body || ref.current?.contains(active) || refs.floating.current?.contains(active)) {
+					// Ensure the toggle is visible before focusing it. This fixes dropdowns
+					// where the toggle only appears on focus/hover and the dropdown-menu is portalled
+					// (e.g., the collections-tree "More" dropdown in the web library)
+					toggle.style.setProperty('visibility', 'visible');
+					toggle.focus();
+					toggle.style.removeProperty('visibility');
+				}
+			}
 		}
 	}, [isOpen, isReady, refs, wasOpen]);
 
