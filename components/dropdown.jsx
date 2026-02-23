@@ -230,7 +230,7 @@ DropdownToggle.propTypes = {
 };
 
 export const DropdownMenu = memo(props => {
-	const {className, ...rest} = props;
+	const {className, onKeyDown: onKeyDownProp, ...rest} = props;
 	const ref = useRef(null);
 
 	const {isOpen, x, y, isReady, strategy, refs, handleToggle, portal} = useContext(DropdownContext);
@@ -244,6 +244,10 @@ export const DropdownMenu = memo(props => {
 	const wasOpen = usePrevious(isOpen);
 
 	const handleKeyDown = useCallback(ev => {
+		onKeyDownProp?.(ev);
+		if (ev.defaultPrevented) {
+			return;
+		}
 		if (ev.key === 'ArrowDown') {
 			focusNext(ev, {useCurrentTarget: false});
 			ev.stopPropagation();
@@ -253,7 +257,7 @@ export const DropdownMenu = memo(props => {
 		} else if (ev.key === 'Escape' || ev.key === 'Tab') {
 			handleToggle(ev);
 		}
-	}, [focusNext, focusPrev, handleToggle]);
+	}, [focusNext, focusPrev, handleToggle, onKeyDownProp]);
 
 	const handleReceiveFocus = useCallback(ev => {
 		if (ev.target !== ev.currentTarget) {
@@ -307,6 +311,7 @@ DropdownMenu.propTypes = {
 	className: PropTypes.string,
 	isOpen: PropTypes.bool,
 	keepOpenOnInteraction: PropTypes.bool,
+	onKeyDown: PropTypes.func,
 	right: PropTypes.bool,
 	tabIndex: PropTypes.string
 };
@@ -322,7 +327,6 @@ export const DropdownItem = memo(props => {
 		if (disabled) {
 			return;
 		}
-		// onKeyDown?.(ev);
 
 		if (ev.key === ' ' || ev.key === 'Enter') {
 			if (tag === 'a') {
