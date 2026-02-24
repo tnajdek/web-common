@@ -53,11 +53,11 @@ export const Dropdown = memo(props => {
 			isKeyboardTrigger.current = ev.type === 'keydown';
 			if (!isOpen) {
 				pendingFocus.current = true;
+				setIsReady(false);
 			} else {
 				pendingReturnFocus.current = true;
 			}
 
-			setIsReady(false);
 			setToggleCount(c => c + 1);
 			onToggle?.(ev);
 			if (ev.key !== 'Tab') {
