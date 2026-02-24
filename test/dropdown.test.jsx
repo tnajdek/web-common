@@ -255,6 +255,41 @@ test('Open with Space and ArrowDown', async ({ mount }) => {
 	await expect(toggle).toBeFocused();
 });
 
+test('Keyboard navigation skips disabled items', async ({ mount }) => {
+	const component = await mount(
+		<div className="container">
+			<UncontrolledDropdown>
+				<DropdownToggle>Click</DropdownToggle>
+				<DropdownMenu>
+					<DropdownItem disabled>Disabled Item</DropdownItem>
+					<DropdownItem>Item 2</DropdownItem>
+					<DropdownItem>Item 3</DropdownItem>
+				</DropdownMenu>
+			</UncontrolledDropdown>
+		</div>
+	);
+
+	const toggle = component.getByRole('button', { name: 'Click' });
+	const menu = component.locator('.dropdown-menu');
+	const item2 = component.getByRole('menuitem', { name: 'Item 2' });
+	const item3 = component.getByRole('menuitem', { name: 'Item 3' });
+	const page = component.page();
+
+	// Open the dropdown -- focus should skip the disabled first item and land on Item 2
+	await toggle.focus();
+	await page.keyboard.press('Enter');
+	await expect(menu).toBeVisible();
+	await expect(item2).toBeFocused();
+
+	// ArrowDown moves focus to Item 3
+	await page.keyboard.press('ArrowDown');
+	await expect(item3).toBeFocused();
+
+	// ArrowUp moves focus back to Item 2 (skipping the disabled item)
+	await page.keyboard.press('ArrowUp');
+	await expect(item2).toBeFocused();
+});
+
 test('Supports strategy prop', async ({ mount }) => {
 	const component = await mount(
 		<div className="container">

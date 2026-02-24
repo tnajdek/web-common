@@ -184,7 +184,7 @@ const useFocusManager = (ref, { initialQuerySelector = null, isCarousel = true, 
 
 		if(lastFocused.current === null && initialQuerySelector !== null) {
 			if(typeof(initialQuerySelector) === 'object' && initialQuerySelector.current && 'focus' in initialQuerySelector.current) {
-				// pased as a ref
+				// passed as a ref
 				storeLastFocused(initialQuerySelector.current);
 			} else if (Array.isArray(initialQuerySelector) || typeof(initialQuerySelector) === 'string') {
 				//passed as a string or array of strings
@@ -192,11 +192,17 @@ const useFocusManager = (ref, { initialQuerySelector = null, isCarousel = true, 
 					// eslint-disable-next-line react-hooks/exhaustive-deps
 					initialQuerySelector = [initialQuerySelector];
 				}
+				const tabbables = getTabbables();
 				for (let i = 0; i < initialQuerySelector.length; i++) {
 					const nextSelector = initialQuerySelector[i];
-					const candidate = ref.current.querySelector(nextSelector);
-					if(candidate) {
-						storeLastFocused(candidate);
+					const allMatches = ref.current.querySelectorAll(nextSelector);
+					for (const candidate of allMatches) {
+						if (tabbables.includes(candidate)) {
+							storeLastFocused(candidate);
+							break;
+						}
+					}
+					if(lastFocused.current) {
 						break;
 					}
 				}
