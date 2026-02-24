@@ -240,7 +240,7 @@ export const DropdownMenu = memo(props => {
 		receiveBlur,
 		receiveFocus,
 		resetLastFocused
-	} = useFocusManager(ref, {initialQuerySelector: '[role="menuitem"]'});
+	} = useFocusManager(ref, {initialQuerySelector: '[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]'});
 	const wasOpen = usePrevious(isOpen);
 
 	const handleKeyDown = useCallback(ev => {
