@@ -141,7 +141,9 @@ class CiteprocWrapper {
 			let bibliography = null;
 
 			if (bibliographyData) {
-				bibliographyData[1] = handleBibliographyErrors(bibliographyData[0], bibliographyData[1], this.itemsStore, this.opts.skipErrors);
+				if (!this.opts.skipErrorChecking) {
+					bibliographyData[1] = handleBibliographyErrors(bibliographyData[0], bibliographyData[1], this.itemsStore, this.opts.skipErrors);
+				}
 				const [meta, items] = bibliographyData;
 				const updatedEntries = meta.entry_ids.reduce((acc, id, index) => {
 					acc[id] = items[index];
@@ -286,6 +288,13 @@ class CiteprocWrapper {
 	makeBibliography() {
 		if (this.isCiteprocJS) {
 			let [meta, items] = this.driver.makeBibliography();
+			if (this.opts.skipErrorChecking) {
+				this.nextMeta = CiteprocWrapper.metaCiteprocJStoRS(meta, this.opts.format);
+				return items.map((value, index) => ({
+					id: Array.isArray(meta.entry_ids[index]) ? meta.entry_ids[index][0] : meta.entry_ids[index],
+					value
+				}));
+			}
 			items = handleBibliographyErrors(meta, items, this.itemsStore, this.opts.skipErrors);
 			this.nextMeta = CiteprocWrapper.metaCiteprocJStoRS(meta, this.opts.format);
 			return meta.entry_ids.map((id, index) => ({ id: Array.isArray(id) ? id[0] : id, value: items[index] }));
@@ -429,6 +438,7 @@ CiteprocWrapper.new = async(style, {
 	formatOptions = { linkAnchors: true },
 	lang = null,
 	localeOverride = null,
+	skipErrorChecking = false,
 	skipErrors = false,
 	supportedLocales = ["en-US"],
 	useCiteprocJS = null,
@@ -444,7 +454,7 @@ CiteprocWrapper.new = async(style, {
 			if (format === 'plain') {
 				format = 'text';
 			}
-			return new CiteprocWrapper(true, CSL, { skipErrors, style, format, lang, localeOverride, formatOptions, retrieveLocale });
+			return new CiteprocWrapper(true, CSL, { skipErrorChecking, skipErrors, style, format, lang, localeOverride, formatOptions, retrieveLocale });
 		} else {
 			if (!Driver) {
 				if (DriverORCSL) {
@@ -459,7 +469,7 @@ CiteprocWrapper.new = async(style, {
 			const fetcher = new Fetcher(localesPath);
 			const driver = new Driver({ localeOverride, format, formatOptions, style, fetcher });
 			await driver.fetchLocales();
-			return new CiteprocWrapper(false, driver, { skipErrors, style, format, lang, localeOverride, formatOptions, Driver });
+			return new CiteprocWrapper(false, driver, { skipErrorChecking, skipErrors, style, format, lang, localeOverride, formatOptions, Driver });
 		}
 	} catch (err) {
 		console.error(err);
@@ -487,5 +497,9 @@ CiteprocWrapper.metaCiteprocJStoRS = (meta, format = 'html') => ({
 	lineSpacing: meta.linespacing,
 	secondFieldAlign: meta['second-field-align']
 });
+
+CiteprocWrapper.setLocaleCache = (lang, xml) => {
+	localeCache[lang] = xml;
+};
 
 export { CiteprocWrapper }

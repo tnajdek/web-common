@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@eslint/compat": "^2.0.2",
+    "citeproc": "^2.4.63",
     "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "<10.0.0",
     "@playwright/experimental-ct-react": "^1.58.2",
@@ -32,6 +33,7 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "globals": "^17.3.0",
+    "load-script": "^2.0.0",
     "npm-run-all2": "^8.0.4",
     "sass-embedded": "^1.97.3",
     "stylelint": "^17.3.0",
