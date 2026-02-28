@@ -128,17 +128,17 @@ export const Dropdown = memo(props => {
 	useEffect(() => {
 		if (isOpen) {
 			['click', 'touchstart'].forEach(evType =>
-				document.addEventListener(evType, handleDocumentEvent, true)
+				document.addEventListener(evType, handleDocumentEvent, { passive: true, capture: true })
 			);
 		} else {
 			['click', 'touchstart', 'keyup'].forEach(evType =>
-				document.removeEventListener(evType, handleDocumentEvent, true)
+				document.removeEventListener(evType, handleDocumentEvent, { capture: true })
 			);
 		}
 
 		return () => {
 			['click', 'touchstart', 'keyup'].forEach(evType =>
-				document.removeEventListener(evType, handleDocumentEvent, true)
+				document.removeEventListener(evType, handleDocumentEvent, { capture: true })
 			);
 		}
 
