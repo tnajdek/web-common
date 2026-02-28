@@ -127,17 +127,20 @@ export const Dropdown = memo(props => {
 
 	useEffect(() => {
 		if (isOpen) {
-			['click', 'touchstart'].forEach(evType =>
-				document.addEventListener(evType, handleDocumentEvent, { passive: true, capture: true })
-			);
+			// Only listen for 'click' -- not 'touchstart'. On touch devices, a tap
+			// produces both touchstart and click. Using click avoids a race where
+			// the capture-phase touchstart on a just-opened menu item could fire
+			// before React has finished committing the open state, and also avoids
+			// closing the dropdown when the user merely scrolls outside of it.
+			document.addEventListener('click', handleDocumentEvent, { passive: true, capture: true });
 		} else {
-			['click', 'touchstart', 'keyup'].forEach(evType =>
+			['click', 'keyup'].forEach(evType =>
 				document.removeEventListener(evType, handleDocumentEvent, { capture: true })
 			);
 		}
 
 		return () => {
-			['click', 'touchstart', 'keyup'].forEach(evType =>
+			['click', 'keyup'].forEach(evType =>
 				document.removeEventListener(evType, handleDocumentEvent, { capture: true })
 			);
 		}
