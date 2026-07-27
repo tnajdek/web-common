@@ -167,6 +167,11 @@ const useFocusManager = (ref, { initialQuerySelector = null, isCarousel = true, 
 			return;
 		}
 
+		if(isBounced && !ref.current.contains(document.activeElement)) {
+			// focus has left the container while this call was deferred, don't steal the focus
+			return;
+		}
+
 		if(!ref.current.dataset.focusRoot) {
 			// we have not yet focused on this item yet, store original tabIndex and mark as focus root
 			ref.current.dataset.focusRoot = '';
