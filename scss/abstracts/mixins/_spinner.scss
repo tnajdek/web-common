@@ -1,0 +1,30 @@
+@use "sass:math";
+
+// Spinner ring geometry. User units equal CSS pixels (the spinner SVG has no
+// viewBox), so the ring inscribes its box when size = 2 * radius + stroke
+// width; a larger box pads the ring, which stays centred via `cx`/`cy`.
+
+// The circle alone: radius, stroke and a 270-degree dash pattern
+@mixin spinner-arc($radius, $stroke-width) {
+	$circumference: 2 * math.$pi * $radius;
+
+	circle {
+		r: $radius;
+		stroke-width: $stroke-width;
+		stroke-dasharray: ($circumference * 0.75) $circumference;
+	}
+}
+
+// A complete spinner variant: the box and the ring
+@mixin spinner-geometry($size, $radius, $stroke-width) {
+	width: $size;
+	height: $size;
+
+	@include spinner-arc($radius, $stroke-width);
+
+	@media (prefers-reduced-motion: reduce) {
+		circle {
+			stroke-dasharray: none; // Full circle -- nothing rotates, so no arc to suggest it
+		}
+	}
+}

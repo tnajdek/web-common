@@ -4,4 +4,5 @@ import '../scss/_icon.scss';
 import '../scss/_popover.scss';
 import '../scss/_progress-ring.scss';
 import '../scss/_select.scss';
+import '../scss/_spinner.scss';
 import '../scss/_tabs.scss';

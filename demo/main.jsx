@@ -8,6 +8,7 @@ import { SelectSection } from './sections/select-section';
 import { TabsSection } from './sections/tabs-section';
 import { MenuEntrySection } from './sections/menu-entry-section';
 import { ProgressRingSection } from './sections/progress-ring-section';
+import { SpinnerSection } from './sections/spinner-section';
 import './main.scss';
 
 function App() {
@@ -15,8 +16,8 @@ function App() {
 		<div className="demo-page">
 			<h1>Web Common – Component Demo</h1>
 			<p className="note">
-				<strong>Note:</strong> Icon, Spinner, and Static are not demoed here.
-				Icon and Spinner require SVG sprite files served at a specific path,
+				<strong>Note:</strong> Icon and Static are not demoed here.
+				Icon requires SVG sprite files served at a specific path,
 				and Static is a context provider with no visual output.
 			</p>
 			<SwitcherSection />
@@ -27,6 +28,7 @@ function App() {
 			<TabsSection />
 			<MenuEntrySection />
 			<ProgressRingSection />
+			<SpinnerSection />
 		</div>
 	);
 }

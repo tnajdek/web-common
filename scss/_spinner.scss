@@ -1,0 +1,70 @@
+@use "abstracts/defaults";
+@use "abstracts/mixins/spinner";
+@forward "abstracts/mixins/spinner";
+
+// Every preset inscribes the ring exactly in its box; `small` matches
+// ProgressRing's default ring. Under reduced motion the arc becomes a full,
+// slowly pulsating circle.
+.spinner {
+	flex: 0 0 auto; // Prevent scaling
+	display: block;
+	color: defaults.$spinner-color;
+
+	@include spinner.spinner-geometry(24px, 11px, 2px);
+
+	&.small {
+		@include spinner.spinner-geometry(16px, 7px, 2px);
+
+		// Dense screens render a crisp hairline ring at this size; the reduced-motion
+		// variant is excluded and keeps the standard stroke for its pulsating circle
+		@media (resolution >= 2dppx) and (prefers-reduced-motion: no-preference) {
+			@include spinner.spinner-arc(7.5px, 1px);
+		}
+	}
+
+	&.large {
+		@include spinner.spinner-geometry(32px, 14.5px, 3px);
+	}
+
+	&.xlarge {
+		@include spinner.spinner-geometry(52px, 24px, 4px);
+	}
+
+	// Animated on the circle, not the root, so it composes with `.centered`'s transform
+	circle {
+		cx: 50%;
+		cy: 50%;
+		fill: none;
+		stroke: currentcolor;
+		transform-box: fill-box;
+		transform-origin: center;
+		animation: spinner-rotation 1s linear infinite;
+
+		@media (prefers-reduced-motion: reduce) {
+			animation: spinner-pulse 2s ease-in-out infinite;
+		}
+	}
+
+	&.inline {
+		display: inline;
+	}
+
+	&.centered {
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+	}
+}
+
+@keyframes spinner-rotation {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes spinner-pulse {
+	50% {
+		opacity: 0.25;
+	}
+}

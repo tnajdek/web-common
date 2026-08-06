@@ -1,69 +1,8 @@
 @use "abstracts/defaults";
-@use "abstracts/mixins/breakpoints";
-@use "abstracts/mixins/selectors";
-@use "abstracts/mixins/utilities";
 
 .icon {
 	flex: 0 0 auto; // Prevent scaling
 	display: inline-block;
 	vertical-align: middle;
 	color: defaults.$icon-color; // Avoid media query here so it is easier to modify the color
-}
-
-.icon-spin {
-	display: block; // todo
-	width: defaults.$icon-spin-size-md;
-	height: defaults.$icon-spin-size-md;
-	animation: spin 1s linear infinite;
-
-	@keyframes spin {
-			0% {
-				transform: rotate(0deg);
-			}
-
-			100% {
-				transform: rotate(360deg);
-			}
-		}
-
-		@keyframes spin-centered {
-			0% {
-				transform: translate(-50%, -50%) rotate(0deg);
-			}
-
-			100% {
-				transform: translate(-50%, -50%) rotate(360deg);
-			}
-		}
-
-	@include breakpoints.mouse-and-bp-up(md) {
-		color: defaults.$spinner-color;
-	}
-
-	&.large {
-		width: defaults.$icon-spin-size-lg;
-		height: defaults.$icon-spin-size-lg;
-	}
-
-	&.small {
-		width: defaults.$icon-spin-size-sm;
-		height: defaults.$icon-spin-size-sm;
-
-		path {
-			stroke-width: 1.2px;
-		}
-	}
-
-	&.inline {
-		width: defaults.$icon-spin-size-sm;
-		height: defaults.$icon-spin-size-sm;
-		display: inline;
-	}
-
-	&.centered {
-		position: absolute;
-		left: 50%;
-		top: 50%;
-		animation: spin-centered 1s linear infinite;
-	}
 }
