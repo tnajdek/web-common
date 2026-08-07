@@ -28,15 +28,13 @@ export default defineConfig({
 		/* Port to use for Playwright component endpoint. */
 		ctPort: 3100,
 
-		// ignore the Node-only require('jsdom') in zotero-utilities
+		// stub out the Node-only require('jsdom') in zotero-utilities
 		ctViteConfig: {
-			build: {
-				commonjsOptions: {
-					include: [/node_modules/, /modules[\\/]zotero-utilities/],
-					transformMixedEsModules: true,
-					ignore: ['jsdom'],
-				},
-			},
+			plugins: [{
+				name: 'stub-jsdom',
+				resolveId: id => (id === 'jsdom' ? '\0jsdom-stub' : null),
+				load: id => (id === '\0jsdom-stub' ? 'export const JSDOM = undefined;' : null),
+			}],
 		},
 	},
 
