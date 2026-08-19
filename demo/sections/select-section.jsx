@@ -44,6 +44,16 @@ export function SelectSection() {
 				<p>Selected: { color }</p>
 			</Section>
 
+			<Section title="Select (with value prefix)">
+				<Select
+					options={ fruitOptions }
+					value={ fruit }
+					onChange={ setFruit }
+					valuePrefix="Fruit:"
+					aria-label="Fruit"
+				/>
+			</Section>
+
 			<Section title="Select (disabled)">
 				<Select
 					disabled

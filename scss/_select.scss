@@ -43,6 +43,15 @@
 		@include utilities.text-truncate;
 	}
 
+	.select-value-prefix {
+		display: flex;
+		align-items: center;
+		flex: 0 0 auto;
+		margin-right: defaults.$select-value-prefix-spacing;
+		color: defaults.$select-value-prefix-color;
+		white-space: nowrap;
+	}
+
 	.select-value {
 		align-items: center;
 		display: flex;

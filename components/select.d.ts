@@ -35,6 +35,7 @@ export interface SelectProps {
 	searchable?: boolean;
 	tabIndex?: number;
 	value?: string;
+	valuePrefix?: React.ReactNode;
 }
 
 export const Select: React.ForwardRefExoticComponent<SelectProps & React.RefAttributes<SelectImperativeHandle>>;

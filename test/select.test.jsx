@@ -381,3 +381,58 @@ test('Should re-apply filter when options change with matching labels', async ({
 	await expect(component.getByRole('listbox').getByRole('option').nth(0)).toHaveText('Apple');
 	await expect(component.getByRole('listbox').getByRole('option').nth(1)).toHaveText('Cape Gooseberry');
 });
+
+test('Renders a value prefix ahead of the value label', async ({ mount }) => {
+	const component = await mount(
+		<div>
+			<Select options={options} value="bar" valuePrefix="Fruit:" />
+		</div>
+	);
+
+	await expect(component.locator('.select-value-prefix')).toHaveText('Fruit:');
+	await expect(component.locator('.select-value-prefix + .select-value-label')).toHaveText('Bar');
+
+	// The prefix is not repeated on the options in the menu
+	await component.getByRole('combobox').click();
+	await expect(component.getByRole('option', { name: 'Bar', exact: true })).toBeVisible();
+});
+
+test('Omits the prefix element unless valuePrefix is given', async ({ mount }) => {
+	const component = await mount(
+		<div>
+			<Select options={options} value="bar" />
+		</div>
+	);
+
+	await expect(component.locator('.select-value-label')).toHaveText('Bar');
+	await expect(component.locator('.select-value-prefix')).toHaveCount(0);
+});
+
+test('Accepts an element as the value prefix', async ({ mount }) => {
+	const component = await mount(
+		<div>
+			<Select
+				options={options}
+				value="bar"
+				valuePrefix={<svg className="icon" role="img" aria-label="Fruit" />}
+			/>
+		</div>
+	);
+
+	await expect(component.locator('.select-value-prefix > svg.icon')).toHaveCount(1);
+});
+
+test('Hides the value prefix while filtering a searchable select', async ({ mount }) => {
+	const component = await mount(
+		<div>
+			<Select searchable options={options} value="bar" valuePrefix="Fruit:" />
+		</div>
+	);
+	const page = component.page();
+
+	await component.getByRole('combobox').click();
+	await expect(component.locator('.select-value-prefix')).toBeVisible();
+
+	await page.keyboard.type('lo');
+	await expect(component.locator('.select-value-prefix')).toHaveCount(0);
+});

@@ -70,7 +70,7 @@ const selectReducer = (state, action) => {
 const Select = memo(forwardRef((props, ref) => {
 	const {
 		children, className, disabled, onBlur, onChange, onFocus, options, readOnly, searchable,
-		tabIndex = 0, value, ...rest
+		tabIndex = 0, value, valuePrefix, ...rest
 	} = props;
 
 	const fallbackID = useId();
@@ -282,9 +282,16 @@ const Select = memo(forwardRef((props, ref) => {
 				<div className="select-multi-value-wrapper">
 					<div className="select-value">
 						{(!searchable || !state.filter.length) && (
-							<span className="select-value-label">
-								{valueLabel}
-							</span>
+							<>
+								{valuePrefix ? (
+									<span className="select-value-prefix">
+										{valuePrefix}
+									</span>
+								) : null}
+								<span className="select-value-label">
+									{valueLabel}
+								</span>
+							</>
 						)}
 					</div>
 					{searchable && <div className="select-input">
