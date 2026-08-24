@@ -16,7 +16,7 @@
 			width: defaults.$dropdown-chevron-size;
 			height: defaults.$dropdown-chevron-size;
 			background: currentcolor;
-			mask: url(defaults.$dropdown-chevron) no-repeat center;
+			mask: url("#{defaults.$dropdown-chevron}") no-repeat center;
 			mask-size: contain;
 			vertical-align: -2px; // Works for btn-lg
 		}

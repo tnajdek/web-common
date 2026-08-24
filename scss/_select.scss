@@ -105,7 +105,7 @@
 		width: defaults.$select-chevron-size;
 		height: defaults.$select-chevron-size;
 		background: currentcolor;
-		mask: url(defaults.$select-chevron) no-repeat center;
+		mask: url("#{defaults.$select-chevron}") no-repeat center;
 		mask-size: contain;
 	}
 
