@@ -2,7 +2,7 @@ import { memo, forwardRef, useContext, useEffect } from 'react';
 import cx from 'classnames';
 import { useForceUpdate } from '../hooks';
 import { pick } from '../utils';
-import { StaticContext } from '.';
+import { StaticContext } from './static';
 
 const is2xMQL = typeof(matchMedia) === 'function' ? matchMedia("(min-resolution: 1.5dppx)") : { matches: false };
 const isDarkMQL = typeof(matchMedia) === 'function' ? matchMedia('(prefers-color-scheme: dark)') : { matches: false };
