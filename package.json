@@ -19,6 +19,7 @@
   "dependencies": {
     "@floating-ui/react-dom": "^2.1.9",
     "classnames": "^2.5.1",
+    "copy-to-clipboard": "4.0.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
