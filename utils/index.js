@@ -6,3 +6,4 @@ export * from './immutable';
 export * from './locale';
 export * from './math';
 export * from './react';
+export * from './translation';
