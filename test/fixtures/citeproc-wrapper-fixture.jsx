@@ -11,7 +11,20 @@ window.CSL = CSL;
 // (sync XHR interception via page.route() is unreliable in WebKit)
 CiteprocWrapper.setLocaleCache('en-US', localeEnUS);
 
-export const CiteprocWrapperFixture = ({ style = mlaStyle, skipErrorChecking = false, items = [], mockBibliography = null, }) => {
+const getBibliography = (wrapper, method) => {
+	if (method === 'batchedUpdates') {
+		const { entryIds, updatedEntries } = wrapper.batchedUpdates().bibliography;
+		return entryIds.map(entryId => ({
+			id: Array.isArray(entryId) ? entryId[0] : entryId,
+			value: updatedEntries[entryId]
+		}));
+	}
+	return wrapper.makeBibliography();
+};
+
+export const CiteprocWrapperFixture = ({ style = mlaStyle, format = 'html', skipErrorChecking = false,
+	skipErrors = false, items = [], mockBibliography = null, mockTaggedBibliography = null,
+	method = 'makeBibliography', calls = 1 }) => {
 	const [result, setResult] = useState(null);
 	const [error, setError] = useState(null);
 
@@ -21,21 +34,26 @@ export const CiteprocWrapperFixture = ({ style = mlaStyle, skipErrorChecking = f
 				const wrapper = await CiteprocWrapper.new(style, {
 					DriverORCSL: CSL,
 					skipErrorChecking,
+					skipErrors,
 					useCiteprocJS: true,
-					format: 'html',
+					format,
 					localesPath: '/locales/',
 				});
 				wrapper.insertReferences(items);
 				if (mockBibliography) {
-					wrapper.driver.makeBibliography = () => mockBibliography;
+					wrapper.driver.makeBibliography = () => wrapper.driver.sys.embedBibliographyEntry ?
+						(mockTaggedBibliography ?? mockBibliography) : mockBibliography;
 				}
-				const bib = wrapper.makeBibliography();
+				let bib;
+				for (let i = 0; i < calls; i++) {
+					bib = getBibliography(wrapper, method);
+				}
 				setResult(bib);
 			} catch (e) {
 				setError(e.message);
 			}
 		})();
-	}, [items, mockBibliography, skipErrorChecking, style]);
+	}, [calls, format, items, method, mockBibliography, mockTaggedBibliography, skipErrorChecking, skipErrors, style]);
 
 	return (
 		<div>

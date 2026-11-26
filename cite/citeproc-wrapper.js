@@ -102,33 +102,48 @@ const pickBestLocale = (userLocales, supportedLocales, fallback = 'en-US') => {
 	return fallback;
 }
 
-// Deal with CiteprocJS bibliography errors, see zotero/zoterobib#309
-const handleBibliographyErrors = (meta, items, itemsStore, skipErrors = false) => {
-	// citeproc-js records a `bibliography_errors` entry whenever an item renders
-	// no meaningful content, but the shape of `items` then depends on the style.
-	// Author-date and note styles drop the entry, so `items` ends up shorter than
-	// `entry_ids` and the missing placeholder has to be spliced back in. Numeric
-	// styles instead keep a placeholder for it -- the citation number on its own,
-	// or a "no printed form" message -- so `items` still lines up with `entry_ids`
-	// and that placeholder only needs overwriting in place.
-	//
-	// Comparing the two lengths tells the cases apart
-	const entriesMissing = meta.entry_ids.length > items.length;
-	meta.bibliography_errors.forEach(({ index, itemID, error_code }) => {
-		console.warn(`CiteprocJS bibliography error: ${error_code} for item ${itemID} at index ${index}`, { meta, items, itemsStore });
-		const failedItemData = itemsStore[itemID] ?? {};
-		const replacement = skipErrors ? '' : `<span class="csl-error">${failedItemData.title ?? '<i>Untitled</i>'}</span>`;
-		if (entriesMissing) {
-			items.splice(index, 0, replacement);
-		} else {
-			items[index] = replacement;
+const ENTRY_TAG = /<!--citeproc-wrapper-entry:([^>]*)-->\n?$/;
+
+const tagEntry = itemId => `<!--citeproc-wrapper-entry:${itemId === undefined ? '' : encodeURIComponent(itemId)}-->`;
+
+const readEntryTag = entry => {
+	const match = entry.match(ENTRY_TAG);
+	return match ? decodeURIComponent(match[1]) : undefined;
+};
+
+const getEntryId = entryIds => Array.isArray(entryIds) ? entryIds[0] : entryIds;
+
+// the rich text markup citeproc-js formats in titles, any other angle brackets are literal text
+const RICH_TEXT_TAG = /<\/?(?:i|b|sc|sup|sub)>|<span\s+(?:class="no(?:case|decor)"|style="font-variant:\s*small-caps;?")[^>]*>|<\/span>/g;
+
+const getClosingTag = openingTag => openingTag.startsWith('<span') ? '</span>' : openingTag.replace('<', '</');
+
+// Removes rich text markup the way citeproc-js applies it: a closing tag pairs with the innermost
+// opening tag it closes, and opening tags left inside that pair, like any tag without a pair, are
+// literal text
+const stripRichText = str => {
+	const tags = [...str.matchAll(RICH_TEXT_TAG)];
+	const openTags = [];
+	const pairedTags = new Set();
+	for (const tag of tags) {
+		if (!tag[0].startsWith('</')) {
+			openTags.push(tag);
+			continue;
 		}
-	});
-	if (meta.entry_ids.length !== items.length) {
-		throw new Error("CiteprocJS bibliography meta entry_ids length does not match items length");
+		while (openTags.length && getClosingTag(openTags[openTags.length - 1][0]) !== tag[0]) {
+			openTags.pop();
+		}
+		if (openTags.length) {
+			pairedTags.add(openTags.pop()).add(tag);
+		}
 	}
-	return items;
-}
+	return tags.filter(tag => pairedTags.has(tag))
+		.reduceRight((acc, tag) => acc.slice(0, tag.index) + acc.slice(tag.index + tag[0].length), str);
+};
+
+const escapeHTML = str => str.replace(/[&<>"']/g, char => `&#${char.charCodeAt(0)};`);
+
+const makeErrorEntry = title => `<span class="csl-error">${title ? escapeHTML(stripRichText(String(title))) : '<i>Untitled</i>'}</span>`;
 
 class CiteprocWrapper {
 	constructor(isCiteprocJS, engine, opts) {
@@ -138,13 +153,7 @@ class CiteprocWrapper {
 			this.CSL = engine;
 			this.itemsStore = {};
 			this.clustersStore = [];
-			this.driver = new this.CSL.Engine({
-				retrieveLocale: opts.retrieveLocale,
-				retrieveItem: itemId => this.itemsStore[itemId],
-				uppercase_subtitles: getStyleProperties(opts.style)?.isUppercaseSubtitlesStyle,
-			}, opts.style, opts.localeOverride || opts.lang, !!opts.localeOverride);
-			this.driver.setOutputFormat(opts.format);
-			this.driver.opt.development_extensions.wrap_url_and_doi = opts.formatOptions.linkAnchors;
+			this.driver = this.createCiteprocJSDriver();
 		} else {
 			this.driver = engine;
 		}
@@ -157,7 +166,7 @@ class CiteprocWrapper {
 
 			if (bibliographyData) {
 				if (!this.opts.skipErrorChecking) {
-					bibliographyData[1] = handleBibliographyErrors(bibliographyData[0], bibliographyData[1], this.itemsStore, this.opts.skipErrors);
+					bibliographyData[1] = this.resolveBibliographyItems(bibliographyData[0], bibliographyData[1]);
 				}
 				const [meta, items] = bibliographyData;
 				const updatedEntries = meta.entry_ids.reduce((acc, id, index) => {
@@ -305,14 +314,11 @@ class CiteprocWrapper {
 			let [meta, items] = this.driver.makeBibliography();
 			if (this.opts.skipErrorChecking) {
 				this.nextMeta = CiteprocWrapper.metaCiteprocJStoRS(meta, this.opts.format);
-				return items.map((value, index) => ({
-					id: Array.isArray(meta.entry_ids[index]) ? meta.entry_ids[index][0] : meta.entry_ids[index],
-					value
-				}));
+				return items.map((value, index) => ({ id: getEntryId(meta.entry_ids[index]), value }));
 			}
-			items = handleBibliographyErrors(meta, items, this.itemsStore, this.opts.skipErrors);
+			items = this.resolveBibliographyItems(meta, items);
 			this.nextMeta = CiteprocWrapper.metaCiteprocJStoRS(meta, this.opts.format);
-			return meta.entry_ids.map((id, index) => ({ id: Array.isArray(id) ? id[0] : id, value: items[index] }));
+			return meta.entry_ids.map((id, index) => ({ id: getEntryId(id), value: items[index] }));
 		} else {
 			const bibOutput = this.driver.makeBibliography();
 			// if html output, wrap with csl-entry, until https://github.com/zotero/citeproc-rs/issues/90
@@ -397,13 +403,63 @@ class CiteprocWrapper {
 	recreateEngine(newOpts) {
 		if (this.isCiteprocJS) {
 			this.opts = { ...this.opts, ...newOpts };
-			this.driver = new this.CSL.Engine({
-				retrieveLocale: this.opts.retrieveLocale,
-				retrieveItem: itemId => this.itemsStore[itemId],
-				uppercase_subtitles: getStyleProperties(this.opts.style)?.isUppercaseSubtitlesStyle
-			}, this.opts.style, this.opts.localeOverride || this.opts.lang, !!this.opts.localeOverride);
-			this.driver.setOutputFormat(this.opts.format);
-			this.driver.opt.development_extensions.wrap_url_and_doi = this.opts.formatOptions.linkAnchors;
+			this.driver = this.createCiteprocJSDriver();
+		}
+	}
+
+	createCiteprocJSDriver() {
+		const driver = new this.CSL.Engine({
+			retrieveLocale: this.opts.retrieveLocale,
+			// citeproc-js passes `system_id` to `embedBibliographyEntry`, see `makeTaggedBibliography`
+			retrieveItem: itemId => this.itemsStore[itemId] && { ...this.itemsStore[itemId], system_id: itemId },
+			uppercase_subtitles: getStyleProperties(this.opts.style)?.isUppercaseSubtitlesStyle,
+		}, this.opts.style, this.opts.localeOverride || this.opts.lang, !!this.opts.localeOverride);
+		driver.setOutputFormat(this.opts.format);
+		driver.opt.development_extensions.wrap_url_and_doi = this.opts.formatOptions.linkAnchors;
+		return driver;
+	}
+
+	// Returns `items` aligned with `meta.entry_ids`. citeproc-js leaves out entries that render
+	// nothing, often without recording a bibliography error for them, so these, and entries with
+	// a recorded error, are replaced with an error entry
+	resolveBibliographyItems(meta, items) {
+		const entryIds = meta.entry_ids.map(getEntryId);
+		const failedIds = new Set(meta.bibliography_errors.map(({ itemID }) => itemID));
+		const outputIndexes = entryIds.length === items.length ?
+			entryIds.map((_, index) => index) :
+			this.findOutputIndexes(entryIds, items.length);
+
+		return entryIds.map((id, i) => {
+			const index = outputIndexes[i];
+			if (index === null || failedIds.has(id)) {
+				console.warn(`CiteprocJS rendered no bibliography entry for item ${id}`);
+				return this.opts.skipErrors ? '' : makeErrorEntry(this.itemsStore[id]?.title);
+			}
+			return items[index];
+		});
+	}
+
+	// Matches each entry id to the index of its rendered entry, or `null` if citeproc-js left it out
+	findOutputIndexes(entryIds, outputCount) {
+		const tags = this.makeTaggedBibliography()[1].map(readEntryTag);
+		if (tags.length !== outputCount) {
+			throw new Error(`CiteprocJS tagged bibliography has ${tags.length} entries, expected ${outputCount}`);
+		}
+		const indexById = new Map(tags.map((id, index) => [id, index]));
+		return entryIds.map(id => indexById.get(id) ?? null);
+	}
+
+	// Renders the bibliography as HTML, where citeproc-js appends the `embedBibliographyEntry`
+	// output to each entry, so every entry is followed by a comment tag holding its item id
+	makeTaggedBibliography() {
+		const { mode } = this.driver.opt;
+		this.driver.sys.embedBibliographyEntry = tagEntry;
+		this.driver.setOutputFormat('html');
+		try {
+			return this.driver.makeBibliography();
+		} finally {
+			delete this.driver.sys.embedBibliographyEntry;
+			this.driver.setOutputFormat(mode);
 		}
 	}
 }
