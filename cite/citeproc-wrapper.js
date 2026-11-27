@@ -145,6 +145,8 @@ const escapeHTML = str => str.replace(/[&<>"']/g, char => `&#${char.charCodeAt(0
 
 const makeErrorEntry = title => `<span class="csl-error">${title ? escapeHTML(stripRichText(String(title))) : '<i>Untitled</i>'}</span>`;
 
+const isEmptyItem = item => !!item && Object.keys(item).every(key => key === 'id' || key === 'type');
+
 class CiteprocWrapper {
 	constructor(isCiteprocJS, engine, opts) {
 		this.isCiteprocJS = isCiteprocJS;
@@ -420,8 +422,9 @@ class CiteprocWrapper {
 	}
 
 	// Returns `items` aligned with `meta.entry_ids`. citeproc-js leaves out entries that render
-	// nothing, often without recording a bibliography error for them, so these, and entries with
-	// a recorded error, are replaced with an error entry
+	// nothing, often without recording a bibliography error for them, so these, entries with a
+	// recorded error and entries of empty items, which styles render as anything from nothing to
+	// "n.d." or a bare number, are replaced with an error entry
 	resolveBibliographyItems(meta, items) {
 		const entryIds = meta.entry_ids.map(getEntryId);
 		const failedIds = new Set(meta.bibliography_errors.map(({ itemID }) => itemID));
@@ -431,9 +434,9 @@ class CiteprocWrapper {
 
 		return entryIds.map((id, i) => {
 			const index = outputIndexes[i];
-			if (index === null || failedIds.has(id)) {
-				console.warn(`CiteprocJS rendered no bibliography entry for item ${id}`);
-				return this.opts.skipErrors ? '' : makeErrorEntry(this.itemsStore[id]?.title);
+			if (index === null || failedIds.has(id) || isEmptyItem(this.itemsStore[id])) {
+				console.warn(`CiteprocJS bibliography has no printable entry for item ${id}`);
+				return makeErrorEntry(this.itemsStore[id]?.title);
 			}
 			return items[index];
 		});
@@ -510,7 +513,6 @@ CiteprocWrapper.new = async(style, {
 	lang = null,
 	localeOverride = null,
 	skipErrorChecking = false,
-	skipErrors = false,
 	supportedLocales = ["en-US"],
 	useCiteprocJS = null,
 }) => {
@@ -525,7 +527,7 @@ CiteprocWrapper.new = async(style, {
 			if (format === 'plain') {
 				format = 'text';
 			}
-			return new CiteprocWrapper(true, CSL, { skipErrorChecking, skipErrors, style, format, lang, localeOverride, formatOptions, retrieveLocale });
+			return new CiteprocWrapper(true, CSL, { skipErrorChecking, style, format, lang, localeOverride, formatOptions, retrieveLocale });
 		} else {
 			if (!Driver) {
 				if (DriverORCSL) {
@@ -540,7 +542,7 @@ CiteprocWrapper.new = async(style, {
 			const fetcher = new Fetcher(localesPath);
 			const driver = new Driver({ localeOverride, format, formatOptions, style, fetcher });
 			await driver.fetchLocales();
-			return new CiteprocWrapper(false, driver, { skipErrorChecking, skipErrors, style, format, lang, localeOverride, formatOptions, Driver });
+			return new CiteprocWrapper(false, driver, { skipErrorChecking, style, format, lang, localeOverride, formatOptions, Driver });
 		}
 	} catch (err) {
 		console.error(err);

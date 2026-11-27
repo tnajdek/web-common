@@ -23,8 +23,8 @@ const getBibliography = (wrapper, method) => {
 };
 
 export const CiteprocWrapperFixture = ({ style = mlaStyle, format = 'html', skipErrorChecking = false,
-	skipErrors = false, items = [], mockBibliography = null, mockTaggedBibliography = null,
-	method = 'makeBibliography', calls = 1 }) => {
+	items = [], mockBibliography = null, mockTaggedBibliography = null, method = 'makeBibliography',
+	calls = 1 }) => {
 	const [result, setResult] = useState(null);
 	const [error, setError] = useState(null);
 
@@ -34,7 +34,6 @@ export const CiteprocWrapperFixture = ({ style = mlaStyle, format = 'html', skip
 				const wrapper = await CiteprocWrapper.new(style, {
 					DriverORCSL: CSL,
 					skipErrorChecking,
-					skipErrors,
 					useCiteprocJS: true,
 					format,
 					localesPath: '/locales/',
@@ -53,7 +52,7 @@ export const CiteprocWrapperFixture = ({ style = mlaStyle, format = 'html', skip
 				setError(e.message);
 			}
 		})();
-	}, [calls, format, items, method, mockBibliography, mockTaggedBibliography, skipErrorChecking, skipErrors, style]);
+	}, [calls, format, items, method, mockBibliography, mockTaggedBibliography, skipErrorChecking, style]);
 
 	return (
 		<div>

@@ -96,17 +96,6 @@ test('error entry shows the title as plain text', async ({ mount }) => {
 	})));
 });
 
-test('skipErrors: entry left out by citeproc-js is blank', async ({ mount }) => {
-	const component = await mount(
-		<CiteprocWrapperFixture style={droppedEntryStyle} items={droppedEntryItems} skipErrors={true} />
-	);
-
-	const entries = await getEntries(component, 3);
-	expect(entries.map(entry => entry.id)).toEqual(['A', 'X', 'Z']);
-	expect(entries[1].value).toBe('');
-	expect(entries[2].value).toContain('Zulu');
-});
-
 test('batchedUpdates: entry left out by citeproc-js keeps its own id', async ({ mount }) => {
 	const component = await mount(
 		<CiteprocWrapperFixture style={droppedEntryStyle} items={droppedEntryItems} method="batchedUpdates" />
@@ -119,22 +108,17 @@ test('batchedUpdates: entry left out by citeproc-js keeps its own id', async ({ 
 	expect(entries[2].value).toContain('Zulu');
 });
 
-test('plain text format: entry left out by citeproc-js is resolved and output stays plain text', async ({ mount }) => {
+test('plain text format: entry left out by citeproc-js is resolved and other entries stay plain text', async ({ mount }) => {
 	const component = await mount(
-		<CiteprocWrapperFixture
-			style={droppedEntryStyle}
-			items={droppedEntryItems}
-			format="plain"
-			skipErrors={true}
-			calls={2}
-		/>
+		<CiteprocWrapperFixture style={droppedEntryStyle} items={droppedEntryItems} format="plain" calls={2} />
 	);
 
 	const entries = await getEntries(component, 3);
 	expect(entries.map(entry => entry.id)).toEqual(['A', 'X', 'Z']);
-	expect(entries[1].value).toBe('');
+	expect(entries[0].value).toContain('Alpha');
+	expect(entries[1].value).toContain('csl-error');
 	expect(entries[2].value).toContain('Zulu');
-	expect(entries.map(entry => entry.value).join('')).not.toContain('<');
+	expect(entries[0].value + entries[2].value).not.toContain('<');
 });
 
 test('MLA: presentation with only a date becomes an error entry', async ({ mount }) => {
@@ -153,6 +137,32 @@ test('MLA: presentation with only a date becomes an error entry', async ({ mount
 	expect(valueOf('A')).toContain('Alpha');
 	expect(valueOf('X')).toContain('csl-error');
 	expect(valueOf('Z')).toContain('Zulu');
+});
+
+// ACM SIG Proceedings renders an empty item as its citation number alone
+const emptyItemItems = [book('A', 'Aa', 'Alpha', 2000), { id: 'X', type: 'book' }];
+
+for (const method of ['makeBibliography', 'batchedUpdates']) {
+	test(`${method}: empty item becomes an error entry whatever the style renders for it`, async ({ mount }) => {
+		const component = await mount(
+			<CiteprocWrapperFixture style={acmSigProceedingsStyle} items={emptyItemItems} method={method} />
+		);
+
+		const entries = await getEntries(component, 2);
+		expect(entries.map(entry => entry.id)).toEqual(['A', 'X']);
+		expect(entries[0].value).toContain('Alpha');
+		expect(entries[1].value).toBe('<span class="csl-error"><i>Untitled</i></span>');
+	});
+}
+
+test('skipErrorChecking: true -- empty item keeps what the style renders for it', async ({ mount }) => {
+	const component = await mount(
+		<CiteprocWrapperFixture style={acmSigProceedingsStyle} items={emptyItemItems} skipErrorChecking={true} />
+	);
+
+	const entries = await getEntries(component, 2);
+	expect(entries[1].value).toContain('[2]');
+	expect(entries[1].value).not.toContain('csl-error');
 });
 
 test('makeBibliography produces entries for 2 items', async ({ mount }) => {
